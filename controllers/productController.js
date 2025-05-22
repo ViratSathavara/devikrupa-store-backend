@@ -1,26 +1,46 @@
 const Product = require('../models/Product');
 
 exports.getProducts = async(req, res) => {
-    const products = await Product.find().populate('category');
+    const products = await Product.find();
     res.json(products);
 };
 
 exports.getProductById = async(req, res) => {
-    const product = await Product.findById(req.params.productId).populate('category');
-    if (product) res.json(product);
-    else res.status(404).json({ message: 'Product not found' });
+    const { productId } = req.params;
+
+    const numericProductId = Number(productId);
+    if (isNaN(productId)) {
+        return res.status(400).json({ message: 'Invalid productId. Must be a number.' });
+    }
+
+    try {
+        const product = await Product.findOne({ productId: numericProductId });
+        if (product) {
+            res.status(200).json({
+                status: 200,
+                data: {
+                    product,
+                },
+            });
+        } else {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching Product:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
 };
 
 exports.createProduct = async(req, res) => {
     try {
-        const { name, companyName, description, price, category, stock, rating } = req.body;
+        const { name, companyName, description, price, categoryId, stock, rating } = req.body;
 
         const newProduct = new Product({
             name,
             companyName,
             description,
             price,
-            category: category.categoryId,
+            categoryId,
             stock,
             rating,
             productId: 1,
@@ -51,8 +71,8 @@ exports.createProduct = async(req, res) => {
 exports.updateProduct = async(req, res) => {
     try {
         const { productId } = req.params;
-        const { name, description, price, category, stock, rating, companyName } = req.body;
-        const newProduct = { name, description, price, category, stock, rating, companyName }
+        const { name, description, price, categoryId, stock, rating, companyName } = req.body;
+        const newProduct = { name, description, price, categoryId, stock, rating, companyName }
 
 
         if (req.files && req.files.length > 0) {

@@ -11,8 +11,10 @@ const admin = require('../middleware/adminMiddleware');
 
 const router = express.Router();
 
-// Public route
+// Public route (no auth required)
 router.get('/', getCategories);
+
+// Protected admin-only routes
 router.post('/', protect, admin, uploadCategoryImage, createCategory);
 router.put('/:categoryId', protect, admin, uploadCategoryImage, updateCategory);
 router.delete('/:categoryId', protect, admin, deleteCategory);

@@ -1,7 +1,6 @@
 const Category = require('../models/Category');
 
 exports.createCategory = async(req, res) => {
-    console.log(req.body)
     try {
         const { categoryName } = req.body;
 
@@ -33,11 +32,12 @@ exports.createCategory = async(req, res) => {
 exports.updateCategory = async(req, res) => {
     try {
         const { categoryId } = req.params;
-        const { categoryName, description } = req.body;
+        const { categoryName, description, bgColor } = req.body;
 
         const updateData = {
             categoryName,
             description,
+            bgColor,
         };
 
         if (req.file) {
@@ -95,9 +95,22 @@ exports.deleteCategory = async(req, res) => {
 // 📥 Get All Categories
 exports.getCategories = async(req, res) => {
     try {
-        const categories = await Category.find().sort({ categoryId: 1 });
-        res.json(categories);
+        const categories = await Category.find()
+            .select('_id categoryId description categoryName bgColor categoryImage')
+            .sort({ categoryId: 1 })
+            .lean();
+
+        res.json({
+            success: true,
+            count: categories.length,
+            data: categories,
+            timestamp: new Date().toISOString()
+        });
+
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error });
+        res.status(500).json({
+            message: 'Failed to fetch categories',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };

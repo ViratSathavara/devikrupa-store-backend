@@ -15,8 +15,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
-app.use(cors());
+// Ensure your backend has proper CORS setup
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://your-production-url.com'],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

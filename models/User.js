@@ -11,11 +11,23 @@ const userSchema = new mongoose.Schema({
     },
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        validate: {
+            validator: function(v) {
+                return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+            },
+            message: props => `${props.value} is not a valid email address!`
+        }
+    },
     phone: { type: String, required: true },
     password: { type: String, required: true, select: false },
     secretId: { type: String },
-    image: { type: String },
+    image: { type: String, required: false },
     role: { type: String, enum: ['user', 'admin'], default: 'user' }
 }, { timestamps: true });
 

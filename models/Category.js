@@ -4,7 +4,8 @@ const Counter = require('./Counter');
 const categorySchema = new mongoose.Schema({
     categoryId: {
         type: Number,
-        unique: true
+        unique: true,
+        required: true
     },
     categoryName: {
         type: String,

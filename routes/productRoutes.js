@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProduct } = require('../controllers/productController');
+const { createProduct, getProductsByCategoryName } = require('../controllers/productController');
 const { getProducts } = require('../controllers/productController');
 const { getProductById } = require('../controllers/productController');
 const { updateProduct } = require('../controllers/productController');
@@ -11,9 +11,8 @@ const admin = require('../middleware/adminMiddleware');
 
 // Public Routes
 router.get('/', getProducts);
+router.get('/category/:categoryName', getProductsByCategoryName);
 router.get('/:productId', getProductById);
-
-// Admin Only Routes
 router.post(
     '/',
     protect,

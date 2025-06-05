@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const BlacklistToken = require('../models/blacklistToken');
 const { sendOTP, verifyOTP } = require('../services/otpService');
 const { generateAndSendOTP } = require('../services/otpService');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const tempRegistrations = new Map();
 
@@ -119,7 +120,6 @@ exports.verifyOTP = async(req, res) => {
     }
 };
 
-
 exports.resendOTP = async(req, res) => {
     try {
         const { email } = req.body;
@@ -162,7 +162,6 @@ exports.resendOTP = async(req, res) => {
         });
     }
 };
-
 
 exports.loginUser = async(req, res, next) => {
     const errors = validationResult(req);
@@ -280,59 +279,64 @@ exports.getUserById = async(req, res) => {
 exports.updateUser = async(req, res) => {
     try {
         const { userId } = req.params;
-        const { firstname, lastname, phone, email, image } = req.body;
+        const { firstname, lastname, phone, email } = req.body;
 
+        console.log(userId, firstname, lastname, phone, email, req.file);
 
         const updateData = {
             firstname,
             lastname,
             phone,
-            email,
-            image
         };
 
-        console.log(updateData)
-
-        if (updateData.email) {
-            const existingUser = await User.findOne({
-                email: updateData.email,
-                userId // exclude current user
-            });
-
-
-            if (existingUser) {
-                return res.status(400).json({ message: 'Email already in use by another user.' });
-            }
-        }
-
+        // Handle image if uploaded
         if (req.file) {
             updateData.image = `/uploads/${req.file.filename}`;
         }
 
-        const updatedCategory = await User.findOneAndUpdate({ userId },
+        // Handle email check
+        if (email) {
+            const existingUser = await User.findOne({ email });
+
+            // Check if the email belongs to someone else
+            if (existingUser && existingUser.userId !== Number(userId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email already in use by another user.',
+                });
+            }
+
+            updateData.email = email;
+        }
+
+        // Update user data
+        const updatedUser = await User.findOneAndUpdate({ userId: Number(userId) },
             updateData, { new: true }
         );
 
-        if (!updatedCategory) {
+        if (!updatedUser) {
             return res.status(404).json({
                 success: false,
-                status: 404,
-                message: 'Category not found or not updated',
+                message: 'User not found or not updated',
             });
         }
 
         res.status(200).json({
             success: true,
-            status: 200,
-            message: 'Category updated successfully',
-            category: updatedCategory,
+            message: 'User updated successfully',
+            user: updatedUser,
         });
 
     } catch (error) {
-        console.error('Update Category Error:', error.message);
-        res.status(500).json({ message: 'Server Error', error });
+        console.error('Update User Error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message,
+        });
     }
 };
+
 
 module.exports.logoutUser = async(req, res, next) => {
     const token = req.headers.authorization.split(' ')[1] || req.cookies.token;
@@ -358,3 +362,33 @@ module.exports.logoutUser = async(req, res, next) => {
         next(error);
     }
 }
+
+exports.createPaymentInstent = async(req, res) => {
+    const { amount } = req.body;
+
+    try {
+        // Validate amount
+        if (!amount || isNaN(amount)) {
+            return res.status(400).json({ error: 'Valid amount is required' });
+        }
+
+        // Create payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100), // Convert dollars to cents
+            currency: 'usd',
+            payment_method_types: ['card'],
+            metadata: {
+                userId: req.user._id.toString() // Add user ID to metadata
+            }
+        });
+
+        res.status(200).json({
+            clientSecret: paymentIntent.client_secret
+        });
+    } catch (err) {
+        console.error('Stripe error:', err);
+        res.status(500).json({
+            error: err.message || 'Failed to create payment intent'
+        });
+    }
+};

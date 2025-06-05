@@ -2,8 +2,9 @@ const Order = require('../models/Order');
 
 exports.createOrder = async(req, res) => {
     const { products, totalPrice } = req.body;
+    console.log(products, totalPrice)
     const order = await Order.create({
-        user: req.user._id,
+        user: req.userId,
         products,
         totalPrice
     });
@@ -11,7 +12,7 @@ exports.createOrder = async(req, res) => {
 };
 
 exports.getMyOrders = async(req, res) => {
-    const orders = await Order.find({ user: req.user._id }).populate('products.product');
+    const orders = await Order.find({ user: req.userId }).populate('products.product');
     res.json(orders);
 };
 

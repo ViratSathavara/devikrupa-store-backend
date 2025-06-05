@@ -1,3 +1,4 @@
+const Category = require('../models/Category');
 const Product = require('../models/Product');
 
 exports.getProducts = async(req, res) => {
@@ -67,6 +68,40 @@ exports.createProduct = async(req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.getProductsByCategoryName = async(req, res) => {
+    const { categoryName } = req.params;
+
+    console.log(categoryName)
+    try {
+        const category = await Category.findOne({ categoryName });
+
+        if (!category) {
+            return res.status(404).json({
+                status: 404,
+                message: 'Category not found',
+            });
+        }
+
+        // Step 2: Use categoryId to find related products
+        const products = await Product.find({ categoryId: category.categoryId });
+
+        res.status(200).json({
+            status: 200,
+            count: products.length,
+            data: {
+                categoryName: category.categoryName,
+                products,
+            },
+        });
+
+    } catch (error) {
+        console.error('Error filtering products:', error);
+        res.status(500).json({ status: 500, message: 'Server Error' });
+    }
+};
+
+
 
 exports.updateProduct = async(req, res) => {
     try {

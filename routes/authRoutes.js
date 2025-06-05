@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { register, getUsers, getUserById, updateUser, logoutUser, verifyOTP, resendOTP } = require('../controllers/authController');
+const { register, getUsers, getUserById, updateUser, logoutUser, verifyOTP, resendOTP, createPaymentInstent } = require('../controllers/authController');
 const { loginUser } = require('../controllers/authController');
 const { deleteUser } = require('../controllers/authController');
 const protect = require('../middleware/authMiddleware');
@@ -17,7 +17,8 @@ router.get('/logout', logoutUser);
 router.delete('/:userId', protect, admin, deleteUser);
 router.get('/', protect, admin, getUsers);
 router.get('/:userId', getUserById);
-router.put('/:userId', protect, admin, uploadUserImage, updateUser);
+router.put('/:userId', protect, uploadUserImage, updateUser);
+router.post('/create-payment-intent', protect, createPaymentInstent);
 
 
 module.exports = router;
